@@ -32,21 +32,6 @@ landing_bounds = [.9*R,3.1*R]
 sep_size = (landing_bounds[1] - landing_bounds[0])/landing_bin
 Norm = grid_spacing**2/(sep_size) # used to change tracer freq to height
 
-'''i = 0
-while i < len(p_list):
-    if t_list[i] > 140:
-        del x_list[i]
-        del y_list[i]
-        del v_list[i]
-        del b_list[i]
-        del p_list[i]
-        del T_list[i]
-        del m_list[i]
-        del t_list[i]
-        del r_list[i]
-        del used[i]
-    else:
-        i += 1'''
 
 #------------------------------------------------------------
 #                          Graphing
