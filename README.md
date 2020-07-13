@@ -7,6 +7,6 @@ Change the parameters in ejecta_search.py to the desired values
 
 run ejecta_search.py
 
-aux_library is solely commonly used cmore complicated functions
+aux_library doesn't need to be run, it's just a library
 
 the remaining files are different graphing programs
