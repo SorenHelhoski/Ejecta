@@ -1,12 +1,14 @@
 # Ejecta
-Creat a directory in the same folder that Chicxulub, Plotting, etc directories are in
+For use in analyzing the properties of ejecta from an iSALE impact
 
-you MUST Create a text document called 'data.txt' in this directory
+Create a directory in the same folder that Chicxulub, Plotting, etc directories are in
+
+IMPORTANT: Create a text document called 'data.txt' in this new directory
 
 Change the parameters in ejecta_search.py to the desired values
 
-run ejecta_search.py
+run ejecta_search.py which searches through the timesteps of 'jdata.dat' from the desired simulation
 
-aux_library doesn't need to be run, it's just a library
+aux_library doesn't need to be run, contains Binning and KDE functions
 
 the remaining files are different graphing programs
