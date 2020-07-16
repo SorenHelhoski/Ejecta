@@ -46,10 +46,14 @@ base = layers0[-1]*grid_spacing
 for i in layers0:
     layers.append(i*grid_spacing - base)
 layers.reverse()
-layers.append(-1*np.inf)
-layers.append(-1*np.inf)
+layers.append(-1*10**16)
+layers.append(-1*10**16)
 
-print('DONE\n')         
+print('DONE\n')   
+
+# make sure data.txt exists
+filetest = open('data.txt','r')    
+filetest.close() 
    
 #============================================================
 #                 Peak Values Search Starts Here
@@ -189,25 +193,25 @@ print('DONE\n')
       
 print('Writing Output File...')
 try:
-    file = open('data.txt','x')
+    file0 = open('data.txt','x')
 except:
-    file = open('data.txt','r+')
-    file.truncate(0)
+    file0 = open('data.txt','r+')
+    file0.truncate(0)
 
 prop = [jumps, start_time, end_time, save_step, R, grid_spacing, g, a, v_0, layers]
 
-file.write(str(x_list)+'\n')
-file.write(str(y_list)+'\n')
-file.write(str(v_list)+'\n')
-file.write(str(b_list)+'\n')
-file.write(str(p_list)+'\n')
-file.write(str(T_list)+'\n')
-file.write(str(m_list)+'\n')
-file.write(str(t_list)+'\n')
-file.write(str(r_list)+'\n')
-file.write(str(used)+'\n')
-file.write(str(prop)+'\n')
+file0.write(str(x_list)+'\n')
+file0.write(str(y_list)+'\n')
+file0.write(str(v_list)+'\n')
+file0.write(str(b_list)+'\n')
+file0.write(str(p_list)+'\n')
+file0.write(str(T_list)+'\n')
+file0.write(str(m_list)+'\n')
+file0.write(str(t_list)+'\n')
+file0.write(str(r_list)+'\n')
+file0.write(str(used)+'\n')
+file0.write(str(prop)+'\n')
 
-file.close()
+file0.close()
 print('DONE\n')
       
