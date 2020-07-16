@@ -1,7 +1,7 @@
 # Ejecta
 For use in analyzing the properties of ejecta from an iSALE impact
 
-Create a directory in the same folder that Chicxulub, Plotting, etc directories are in
+Create a directory on the same level as Chicxulub, Plotting, BenchmarkData directories 
 
 IMPORTANT: Create a text document called 'data.txt' in this new directory
 
