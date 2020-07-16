@@ -19,7 +19,7 @@ class Bin:
         x_list.sort()
         lower, upper = bounds
         bin_size = (upper - lower) / bins
-    
+
         # inintialize certain parameters
         bottom = lower # lower bound of bin
         x_bin = [] # average of each
@@ -42,26 +42,24 @@ class Bin:
             if bottom <= x_list[i] <= bottom + bin_size:
                 x_.append(x_list[i])
                 i += 1
-            # skip over empty bins
-            elif x_ == []:
-                x_bin.append(bottom+bin_size/2)
-                freq.append(0)
-                freq_err.append(0)
-                x_err.append(0)
-                x_ = []
-                bottom += bin_size
-            # finalize the bin
             else:
-                x_bin.append(np.average(x_))
+                x_bin.append(bottom+bin_size/2)
                 freq.append(len(x_))
                 freq_err.append((len(x_))**(1/2))
                 x_err.append(np.std(x_))
                 x_ = []
                 bottom += bin_size
-        x_bin.append(np.average(x_))
+        x_bin.append(bottom+bin_size/2)
         freq.append(len(x_))
         freq_err.append((len(x_))**(1/2))
         x_err.append(np.std(x_))
+
+        while len(x_bin) <= bins:
+            x_bin.append(bottom+bin_size/2)
+            freq.append(0)
+            freq_err.append(0)
+            x_err.append(0)
+            bottom += bin_size
         
         c = 0 # total in each bin
         cmlt = [] # cumulative total in each bin

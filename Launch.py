@@ -12,6 +12,16 @@ psp.mkdir_p(dirname)
 launch_bin = 500 # number of tracers binned together in the launch graphs
 mass_bins = 100  # number of bins in the mass density graphs
 
+#(must have three sig figs for formatting)
+guesses_velocity = [14000, -2.00] # initial guesses
+guesses_mass     = [2.000*10**19,-4.30] # initial guesses
+
+#densities of materials in kg/km^3
+dens0 = 3.25*10**12 # density of impactor
+dens1 = 2.5*10**12  # density of crust
+dens2 = 3.25*10**12 # density of mantle
+dens3 = 0           # density of core
+
 print('Opening data file...')
 # open tracer file
 file2 = open('data.txt','r')
@@ -25,7 +35,7 @@ m_list = list(eval(file2.readline().replace('\n','')))
 t_list = list(eval(file2.readline().replace('\n','')))
 r_list = list(eval(file2.readline().replace('\n','')))
 used =   list(eval(file2.readline().replace('\n','')))
-jumps, start_time, end_time, save_step, grid_spacing, g, a, v_0, R  = eval(file2.readline().replace('\n',''))
+jumps, start_time, end_time, save_step, R, grid_spacing, g, a, v_0, layers  = eval(file2.readline().replace('\n',''))
 print('DONE\n')
 
 #------------------------------------------------------------
@@ -71,8 +81,6 @@ fig0 = plt.figure(figsize=(12, 6)) # launch graph
 ax0=fig0.add_subplot(111) # scatter velocity
 ax0.set_ylabel('Speed [km/s]')
 ax0.set_xlabel('Launch Location [km]')
-ax0.set_xlim(40,1000)
-ax0.set_ylim(0.01,5)
 ax0.set_yscale('log')
 ax0.set_xscale('log')
 
@@ -80,10 +88,12 @@ from scipy.optimize import curve_fit as fit
 
 def model_func(x,A,B):
     return A* (x) ** B 
-
-popt, pcov = fit(model_func, x_bin, v_bin, p0 = [14000, -2.0], sigma=v_err)
-
-A_fit, B_fit = popt 
+try:
+    popt, pcov = fit(model_func, x_bin, v_bin, p0 = guesses_velocity, sigma=v_err)
+    A_fit, B_fit = popt
+except:
+    A_fit, B_fit = guesses_velocity
+    print('Could not find appropriate fit; Change initial guesses')
 
 ax0.set_title('Launch Speed with curve fit : {0:0.03f}r^{1:0.03f} : {2:0.03f}(r/a)^{1:0.03f}'.format(A_fit,B_fit, A_fit/v_0*a**B_fit))
 
@@ -130,11 +140,6 @@ print('Saved: Tracer Launch (bin={}).png\n'.format(launch_bin))
 #                     Mass Density Dist
 #------------------------------------------------------------
 
-#densities of materials in kg/km^3
-dens0 = 3.25*10**12 # density of impactor
-dens1 = 2.5*10**12  # density of crust
-dens2 = 3.25*10**12 # density of mantle
-dens3 = 0           # density of core
 
 mass1, mass2, mass3, mass0 = [],[],[],[]
 for i in range(len(m_list)):
@@ -153,12 +158,12 @@ Bounds = [0,max(x_list)]
 Mass0 = Bin(mass0, bounds = Bounds, bins=bins)
 Mass1 = Bin(mass1, bounds = Bounds, bins=bins)
 Mass2 = Bin(mass2, bounds = Bounds, bins=bins)
-#Mass3 = Bin(mass3, bounds = Bounds, bins=bins)
+Mass3 = Bin(mass3, bounds = Bounds, bins=bins)
 
 freq0 = Mass0.get_y(factor = dens0/bins)
 freq1 = Mass1.get_y(factor = dens1/bins)
 freq2 = Mass2.get_y(factor = dens2/bins)
-#freq3 = Mass3.get_y(factor = dens3/bins)
+freq3 = Mass3.get_y(factor = dens3/bins)
 
 xs = Mass0.get_x()
 mass = []
@@ -170,7 +175,7 @@ def annulus(x, a, b):
 
 total_mass = 0
 for i in range(len(xs)):
-    mass_in_bin = freq0[i]+freq1[i]+freq2[i]#+freq3[i]
+    mass_in_bin = freq0[i]+freq1[i]+freq2[i]+freq3[i]
     total_mass += mass_in_bin
     mass.append((mass_in_bin)/annulus(xs[i],Bounds,bins))
 
@@ -184,9 +189,12 @@ for i in range(len(xs)):
 def model_func(x,A,B):
     return A * x ** B 
 
-popt, pcov = fit(model_func, xs_fit, mass_fit, p0 = [10**15,-3.3])
-
-A_fit, B_fit = popt 
+try:
+    popt, pcov = fit(model_func, xs_fit, mass_fit, p0 = mass_guesses)
+    A_fit, B_fit = popt
+except:
+    A_fit, B_fit = guesses_mass
+    print('Could not find appropriate fit; Change initial guesses') 
 
 # fit for Data
 curve = []
@@ -200,8 +208,8 @@ ax.set_ylabel('Mass per Area [kg km^-2]')
 ax.scatter(xs,mass)
 ax.scatter(xs_fit,mass_fit)
 ax.plot(xs_fit,curve)
-ax.text(R,.5*max(mass),'{0:.05}*r^{1:.05} \n\nTotal Mass : {2:.05} kg'.format(A_fit,B_fit,total_mass))
+ax.text(R,.5*max(mass),'{0:.03}*r^{1:.03} \n\nTotal Mass : {2:.03} kg'.format(A_fit,B_fit,total_mass))
 ax.set_yscale('log')
 ax.set_title('Ejecta Mass Density and Launch Location')
-fig.savefig('{}/Mass Density.png'.format(dirname))
-print('Saved: Mass Density.png\n')
+fig.savefig('{}/Mass Density(bin={}).png'.format(dirname,mass_bins))
+print('Saved: Mass Density(bin={}).png\n'.format(mass_bins))

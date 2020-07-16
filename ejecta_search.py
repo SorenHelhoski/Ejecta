@@ -2,23 +2,59 @@ import numpy as np
 from math import atan, pi, sqrt, sin, cos, floor
 import pySALEPlot as psp
 
-# Changeable Parameters
-start_time = 1 # must be larger than 0  
-end_time = 600 #
-jumps = 1 # 1 over jumps is the fraction of tracers looped over
-# Parameters from the simulation (from asteroid.inp)
-save_step = 1 # save interval of the simulation
-grid_spacing = 1 # km
-g = 1.63 *10**-3 # gravity (km/s^2)
-a   = 50  # radius of impactor (km)
-v_0 = 12  # impact velcity (km/s)
-# Rough final size of crater
-R = 500 # basin size (km)
+#============================================================
+#                Manually Changed Parameters 
+#============================================================
 
+start_time = 1 # Starting time STEP (must be larger than 0)
+end_time = 600 # final time STEP
+jumps = 1 # number of skips between searches. (use 1, unless troubleshooting)
+R = 500 # Rough final size of crater (km) appeal to plots of the impact
+
+esc_vel = 2.4 # escape velocity (km/s)
+
+# terminal message
 if jumps != 1:
       print('1 out of every {} tracers considered'.format(jumps)) 
-print('Running ejecta.py from timesteps {}-{}\n'.format(start_time, end_time))
+print('Running ejecta_search.py from timesteps {}-{}\n'.format(start_time, end_time))
+
+#============================================================
+#                Parameters from asteroid.inp)
+#============================================================
+
+print('Opening asteroid.inp...')
+# open input file
+ast_input = open('../asteroid.inp','r')
+keywords = ['GRIDSPC', 'GRAV_V', 'OBJRESH', 'OBJVEL', 'DTSAVE']
+ast_dict = {}
+for line in ast_input:
+    word  = line[0:16].replace(' ','')
+    value = (line[54:-1].replace(' ','').replace(':',',')).replace('D','*10**')
+    if word == 'LAYPOS':
+        layers0 = eval('['+value+']')
+    if word in keywords:
+        ast_dict[word] = eval(value)
+
+save_step = ast_dict['DTSAVE']             # save interval of sim (s)
+grid_spacing = ast_dict['GRIDSPC'] *.001   # (km)
+g   = ast_dict['GRAV_V'] * -0.001           # gravity (km/s^2)
+a   = ast_dict['OBJRESH'] * grid_spacing   # radius of impactor (km)
+v_0 = ast_dict['OBJVEL'] * -0.001          # impact velcity (km/s)
+
+layers = []
+base = layers0[-1]*grid_spacing
+for i in layers0:
+    layers.append(i*grid_spacing - base)
+layers.reverse()
+layers.append(-1*np.inf)
+layers.append(-1*np.inf)
+
+print('DONE\n')         
    
+#============================================================
+#                 Peak Values Search Starts Here
+#============================================================
+
 
 #Find the peak pressures of all tracers
 print('Extracting Peak Pressure')
@@ -41,11 +77,11 @@ yy_0 = np.append(np.zeros(0), step.ymark)
 #get the materials:
 mat = []    # materials of all tracers
 for i in range(len(yy_0)): # sort based on initial location
-    if yy_0[i] > 0:
+    if yy_0[i] > layers[0]:
         mat.append('impactor')
-    elif yy_0[i] > -30:  # bottom of first layer
+    elif yy_0[i] > layers[1]:  # bottom of first layer
         mat.append('crust')
-    elif yy_0[i] > -500: # bottom of second layer
+    elif yy_0[i] > layers[2]: # bottom of second layer
         mat.append('mantle') 
     else:                # deepest layer
         mat.append('core')
@@ -116,7 +152,7 @@ for time in range(start_time , end_time+1):
 
             used.append(each) # indexes of previously used tracers
 
-            if D_y/save_step < 2.4:
+            if D_y/save_step < esc_vel:
                 # rejected tracers of this statement are excluded forever
                 # tracers above escape velocity
                 x_list.append(xx_1[each]) # x position normalized
@@ -158,7 +194,7 @@ except:
     file = open('data.txt','r+')
     file.truncate(0)
 
-prop = [jumps, start_time, end_time, save_step, grid_spacing, g, a, v_0, R]
+prop = [jumps, start_time, end_time, save_step, R, grid_spacing, g, a, v_0, layers]
 
 file.write(str(x_list)+'\n')
 file.write(str(y_list)+'\n')

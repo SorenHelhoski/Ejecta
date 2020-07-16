@@ -12,6 +12,9 @@ landing_bin = 50 # number of bins of the landing position of ejecta
 pres_bin = 20 # number of bins in the pressure histogram
 temp_bin = 30 # number of bins in the temperature histogram
 
+guesses = [14.00*10**6, -2.300] # guesses for the landing loc curve A*x^B
+#(must have three sig figs for formatting)
+
 print('Opening data file...')
 # open tracer file
 file2 = open('data.txt','r')
@@ -25,13 +28,12 @@ m_list = list(eval(file2.readline().replace('\n','')))
 t_list = list(eval(file2.readline().replace('\n','')))
 r_list = list(eval(file2.readline().replace('\n','')))
 used =   list(eval(file2.readline().replace('\n','')))
-jumps, start_time, end_time, save_step, grid_spacing, g, a, v_0, R  = eval(file2.readline().replace('\n',''))
+jumps, start_time, end_time, save_step, R, grid_spacing, g, a, v_0, layers  = eval(file2.readline().replace('\n',''))
 print('DONE\n')
 
 landing_bounds = [.9*R,3.1*R]
 sep_size = (landing_bounds[1] - landing_bounds[0])/landing_bin
 Norm = grid_spacing**2/(sep_size) # used to change tracer freq to height
-
 
 #------------------------------------------------------------
 #                          Graphing
@@ -56,10 +58,10 @@ ax.set_xlabel('Pressure [GPa]')
 ax.set_yscale('log')
 ax.set_title('Pressure Histogram')
 
-ax.hist(p_list, bins = 100)
+ax.hist(p_list, bins = pres_bin)
 
-fig.savefig('{}/Pressure_Hist.png'.format(dirname))
-print('Saved: Pressure_Hist.png')
+fig.savefig('{}/Pressure_Hist(bin={}).png'.format(dirname,pres_bin))
+print('Saved: Pressure_Hist(bin={}).png'.format(pres_bin))
 
 # Peak Temperature
 fig = plt.figure(figsize=(12, 6)) # peak temperature
@@ -80,10 +82,10 @@ ax.set_xlabel('Temperature [K]')
 ax.set_yscale('log')
 ax.set_title('Temperature Histogram')
 
-ax.hist(T_list, bins = 100)
+ax.hist(T_list, bins = temp_bin)
 
-fig.savefig('{}/Temperature_Hist.png'.format(dirname))
-print('Saved: Temperature_Hist.png\n')
+fig.savefig('{}/Temperature_Hist(bin={}).png'.format(dirname,temp_bin))
+print('Saved: Temperature_Hist(bin={}).png\n'.format(temp_bin))
 
 
 #------------------------------------------------------------
@@ -116,9 +118,12 @@ cmlt_right = location_all.get_cmltr()
 def model_func(x,A,B):
     return A * x ** B 
 
-popt, pcov = fit(model_func, r_bin, height, p0 = [14*10**6, -2.3], sigma = h_err)
-
-A_fit, B_fit = popt 
+try:
+    popt, pcov = fit(model_func, r_bin, height, p0 = guesses, sigma = h_err)
+    A_fit, B_fit = popt 
+except:
+    A_fit, B_fit = guesses
+    print('Could not find appropriate fit; Change initial guesses')
 
 # fit for Data
 height_expected = []

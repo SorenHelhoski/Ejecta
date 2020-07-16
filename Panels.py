@@ -11,6 +11,12 @@ landing_bin = 50 # number of bins of the landing position of ejecta
 pres_bin = 40 # number of bins in the pressure histogram
 temp_bin = 60 # number of bins in the temperature histogram
 
+pres_range = [0,200] # range plotted GPa
+temp_range = [0,4000] # range plotted K
+
+y_lim_pres = 250 
+y_lim_temp = 250 
+
 print('Opening data file...')
 # open tracer file
 file2 = open('data.txt','r')
@@ -24,7 +30,7 @@ m_list = list(eval(file2.readline().replace('\n','')))
 t_list = list(eval(file2.readline().replace('\n','')))
 r_list = list(eval(file2.readline().replace('\n','')))
 used =   list(eval(file2.readline().replace('\n','')))
-jumps, start_time, end_time, save_step, grid_spacing, g, a, v_0, R  = eval(file2.readline().replace('\n',''))
+jumps, start_time, end_time, save_step, R, grid_spacing, g, a, v_0, layers  = eval(file2.readline().replace('\n',''))
 print('DONE\n')
 
 landing_bounds = [.9*R,3.1*R] 
@@ -32,6 +38,9 @@ sep_size = (landing_bounds[1] - landing_bounds[0])/landing_bin
 Norm = grid_spacing**2/(sep_size) # used to change tracer freq to height
 
 Loc = [R, 6*R/5, 7*R/5, 8*R/5, 9*R/5, 10*R/5, 11*R/5, 12*R/5, 13*R/5, 14*R/5]
+
+pres_mid = (pres_range[1]+pres_range[0])/2
+temp_mid = (temp_range[1]+temp_range[0])/2
 
 #------------------------------------------------------------
 #                     Histogram
@@ -99,14 +108,15 @@ KDE_P = [[None,None,None,None]]
 
 NKDE_P = [[None,None, None,None]]
 
-guess = [[530, 6, 10],[360, 6, 10],[260, 8, 11],[190, 10, 12],[150, 11, 14],[100, 14, 14],[70, 15, 12],[50, 15, 11],[40, 15, 11],[30, 15, 6]]
+#guess = [[530, 6, 10],[360, 6, 10],[260, 8, 11],[190, 10, 12],[150, 11, 14],[100, 14, 14],[70, 15, 12],[50, 15, 11],[40, 15, 11],[30, 15, 6]]
 
 param = []
 
 counter = 0
 for each in p_all:
-    pdf = Density(each, bounds = [-10,210])
-    popt, pcov = fit(model_func, pdf.get_x(), pdf.get_y(), p0 = guess[counter], bounds = [[10,-10,1],[10000,25,25]], method = 'trf')
+    pdf = Density(each, bounds = pres_range)
+    guess = [max(pdf.get_y()), pres_mid, (pres_range[1]-pres_range[0])/4]
+    popt, pcov = fit(model_func, pdf.get_x(), pdf.get_y(), p0 = guess, bounds = [[1,pres_range[0],0],[2*max(pdf.get_y()),pres_range[1],pres_range[1]]], method = 'trf')
     A_fit, B_fit, C_fit = popt
     param.append(popt)
     gaussian = []
@@ -123,8 +133,8 @@ KDE_T = [[None,None]]
 NKDE_T = [[None,None]]
 
 for each in T_all:
-    temperature = Bin(each, bins = temp_bin, bounds = [0,4000])
-    pdf = Density(each, bounds = [-100,4000])
+    temperature = Bin(each, bins = temp_bin, bounds = temp_range)
+    pdf = Density(each, bounds = temp_range)
     KDE_T.append([pdf.get_x(), pdf.get_y()])
     NKDE_T.append([pdf.get_x(), pdf.get_norm_y()])
 
@@ -149,15 +159,15 @@ ax9=fig.add_subplot(259)
 ax10=fig.add_subplot(2,5,10)
 
 axes = [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9,ax10]
-lower,upper = -10, 200   
+lower,upper = pres_range   
 loc = R
 for each in range(len(axes)):
     axis = axes[each]
-    axis.hist(p_all[each], bins = pres_bin, range = (0,200))
+    axis.hist(p_all[each], bins = pres_bin, range = pres_range)
     axis.plot(KDE_P[each+1][0], KDE_P[each+1][1])
     axis.set_title('{} km - {} km'.format(loc,loc+R/5))
     axis.set_xlim(lower,upper)
-    axis.set_ylim(0,250)
+    axis.set_ylim(0,y_lim_pres)
     loc += R/5
 
 ax1.set_ylabel('Frequency of Tracers')
@@ -185,16 +195,17 @@ ax9=fig.add_subplot(259)
 ax10=fig.add_subplot(2,5,10)
 
 axes = [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9,ax10]
-lower,upper = -10, 200   
+lower,upper = pres_range   
 loc = R
 for each in range(len(axes)):
     axis = axes[each]
-    axis.hist(p_all[each], bins = pres_bin, range = (0,200))
+    axis.hist(p_all[each], bins = pres_bin, range = pres_range)
     axis.plot(KDE_P[each+1][0], KDE_P[each+1][2])
     axis.set_title('{} km - {} km'.format(loc,loc+R/5))
     aa,bb,cc = param[each]
-    axis.text(50,.7*max(KDE_P[each+1][2]), "Amplitude: {0:.0f} \n    Mean   : {1:.3f} \n StndDvtn: {2:.3f}".format(aa,bb,cc))
+    axis.text(pres_mid,.7*y_lim_pres, "ampd : {0:.0f} \n mean: {1:.2f} \n stdv: {2:.2f}".format(aa,bb,cc))
     axis.set_xlim(lower,upper)
+    axis.set_ylim(0,y_lim_pres)
     loc += R/5
 
 ax1.set_ylabel('Frequency of Tracers')
@@ -208,7 +219,7 @@ ax10.set_xlabel('Peak Pressure [GPa]')
 fig.savefig('{}/Peak Pressure (Gaussian) (bin={}).png'.format(dirname,pres_bin))
 print('Saved: Peak Pressure (Gaussian) (bin={}).png'.format(pres_bin))
 
-#Peak Pressure over each range (pdf gaussi)
+#Peak Pressure over each range (pdf gaussian)
 fig = plt.figure(figsize=(16, 8)) # peak pressure histograms
 ax1=fig.add_subplot(251)
 ax2=fig.add_subplot(252)
@@ -222,7 +233,7 @@ ax9=fig.add_subplot(259)
 ax10=fig.add_subplot(2,5,10)
 
 axes = [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9,ax10]
-lower,upper = -10, 200   
+lower,upper = pres_range   
 loc = R
 for each in range(len(axes)):
     axis = axes[each]
@@ -230,8 +241,9 @@ for each in range(len(axes)):
     axis.plot(KDE_P[each+1][0], KDE_P[each+1][2])
     axis.set_title('{} km - {} km'.format(loc,loc+R/5))
     aa,bb,cc = param[each]
-    axis.text(50,.7*max(KDE_P[each+1][2]), "Amplitude: {0:.0f} \n    Mean   : {1:.3f} \n StndDvtn: {2:.3f}".format(aa,bb,cc))
+    axis.text(pres_mid,.7*y_lim_pres, "ampd : {0:.0f} \n mean: {1:.2f} \n stdv: {2:.2f}".format(aa,bb,cc))
     axis.set_xlim(lower,upper)
+    axis.set_ylim(0,y_lim_pres)
     loc += R/5
 
 ax1.set_ylabel('Frequency of Tracers')
@@ -244,43 +256,6 @@ ax10.set_xlabel('Peak Pressure [GPa]')
 
 fig.savefig('{}/Peak Pressure (Gaussian and KDE).png'.format(dirname))
 print('Saved: Peak Pressure (Gaussian and KDE).png')
-
-
-#Peak Temperature over each range
-fig = plt.figure(figsize=(16, 8)) # peak pressure histograms
-ax1=fig.add_subplot(251)
-ax2=fig.add_subplot(252)
-ax3=fig.add_subplot(253)
-ax4=fig.add_subplot(254)
-ax5=fig.add_subplot(255)
-ax6=fig.add_subplot(256)
-ax7=fig.add_subplot(257)
-ax8=fig.add_subplot(258)
-ax9=fig.add_subplot(259)
-ax10=fig.add_subplot(2,5,10)
-
-axes = [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9,ax10]
-lower,upper = 0, 4000   
-loc = R
-for each in range(len(axes)):
-    axis = axes[each]
-    axis.hist(T_all[each], bins = temp_bin, range = (0,5000))
-    axis.plot(KDE_T[each+1][0], KDE_T[each+1][1])
-    axis.set_title('{} km - {} km'.format(loc,loc+R/5))
-    axis.set_xlim(lower,upper)
-    axis.set_ylim(0,250)
-    loc += R/5
-
-ax1.set_ylabel('Frequency of Tracers')
-ax6.set_ylabel('Frequency of Tracers')
-ax6.set_xlabel('Peak Temp [K]')
-ax7.set_xlabel('Peak Temp [K]')
-ax8.set_xlabel('Peak Temp [K]')
-ax9.set_xlabel('Peak Temp [K]')
-ax10.set_xlabel('Peak Temp [K]')
-
-fig.savefig('{}/Peak Temperature(bin={}).png'.format(dirname,temp_bin))
-print('Saved: Peak Temperature(bin={}).png'.format(temp_bin))
 
 #Peak Pressure over each range
 fig = plt.figure(figsize=(16, 8)) # peak pressure histograms
@@ -296,14 +271,15 @@ ax9=fig.add_subplot(259)
 ax10=fig.add_subplot(2,5,10)
 
 axes = [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9,ax10]
-lower,upper = -10, 200   
+lower,upper = pres_range   
 loc = R
 for each in range(len(axes)):
     axis = axes[each]
     axis.plot(NKDE_P[each+1][0], NKDE_P[each+1][1])
     axis.set_title('{} km - {} km'.format(loc,loc+R/5))
     axis.set_xlim(lower,upper)
-    axis.set_ylim(0,0.06)
+    top = 10/float(pres_range[1]-pres_range[0])
+    axis.set_ylim(0,top)
     loc += R/5
 
 ax1.set_ylabel('Frequency of Tracers')
@@ -316,6 +292,8 @@ ax10.set_xlabel('Peak Pressure [GPa]')
 
 fig.savefig('{}/Normed Pressure(bin={}).png'.format(dirname,pres_bin))
 print('Saved: Normed Pressure(bin={}).png'.format(pres_bin))
+
+#-------------------------------------------------
 
 #Peak Temperature over each range
 fig = plt.figure(figsize=(16, 8)) # peak pressure histograms
@@ -331,14 +309,52 @@ ax9=fig.add_subplot(259)
 ax10=fig.add_subplot(2,5,10)
 
 axes = [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9,ax10]
-lower,upper = 0, 4000   
+lower,upper = temp_range  
+loc = R
+for each in range(len(axes)):
+    axis = axes[each]
+    axis.hist(T_all[each], bins = temp_bin, range = temp_range)
+    axis.plot(KDE_T[each+1][0], KDE_T[each+1][1])
+    axis.set_title('{} km - {} km'.format(loc,loc+R/5))
+    axis.set_xlim(lower,upper)
+    axis.set_xlim(lower,upper)
+    axis.set_ylim(0,y_lim_temp)
+    loc += R/5
+
+ax1.set_ylabel('Frequency of Tracers')
+ax6.set_ylabel('Frequency of Tracers')
+ax6.set_xlabel('Peak Temp [K]')
+ax7.set_xlabel('Peak Temp [K]')
+ax8.set_xlabel('Peak Temp [K]')
+ax9.set_xlabel('Peak Temp [K]')
+ax10.set_xlabel('Peak Temp [K]')
+
+fig.savefig('{}/Peak Temperature(bin={}).png'.format(dirname,temp_bin))
+print('Saved: Peak Temperature(bin={}).png'.format(temp_bin))
+
+#Peak Temperature over each range
+fig = plt.figure(figsize=(16, 8)) # peak pressure histograms
+ax1=fig.add_subplot(251)
+ax2=fig.add_subplot(252)
+ax3=fig.add_subplot(253)
+ax4=fig.add_subplot(254)
+ax5=fig.add_subplot(255)
+ax6=fig.add_subplot(256)
+ax7=fig.add_subplot(257)
+ax8=fig.add_subplot(258)
+ax9=fig.add_subplot(259)
+ax10=fig.add_subplot(2,5,10)
+
+axes = [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9,ax10]
+lower,upper = temp_range   
 loc = R
 for each in range(len(axes)):
     axis = axes[each]
     axis.plot(NKDE_T[each+1][0], NKDE_T[each+1][1])
     axis.set_title('{} km - {} km'.format(loc,loc+R/5))
     axis.set_xlim(lower,upper)
-    axis.set_ylim(0,.003)
+    top = 10/float(temp_range[1]-temp_range[0])
+    axis.set_ylim(0,top)
     loc += R/5
 
 ax1.set_ylabel('Frequency of Tracers')
