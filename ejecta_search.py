@@ -11,7 +11,9 @@ end_time = 600 # final time STEP
 jumps = 1 # number of skips between searches. (use 1, unless troubleshooting)
 R = 100 # Rough final size of crater (km) appeal to plots of the impact
 
+# exclusion parameters
 esc_vel = 11.2 # escape velocity (km/s)
+crit_angle = 1.3 # minimum angle to be considered uplift (rad)
 
 # terminal message
 if jumps != 1:
@@ -52,6 +54,7 @@ layers.append(-1*10**16)
 print('DONE\n')   
 
 # make sure data.txt exists
+open('data.txt','a').close()
 filetest = open('data.txt','r')    
 filetest.close() 
    
@@ -156,7 +159,7 @@ for time in range(start_time , end_time+1):
 
             used.append(each) # indexes of previously used tracers
 
-            if D_y/save_step < esc_vel and angle < 1.3:
+            if D_y/save_step < esc_vel and angle < crit_angle:
                 # rejected tracers of this statement are excluded forever
                 # tracers above escape velocity and above critical angle
                 x_list.append(xx_1[each]) # x position normalized
