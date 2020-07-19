@@ -7,11 +7,11 @@ import pySALEPlot as psp
 #============================================================
 
 start_time = 1 # Starting time STEP (must be larger than 0)
-end_time = 600 # final time STEP
+end_time = 1000 # final time STEP
 jumps = 1 # number of skips between searches. (use 1, unless troubleshooting)
 R = 100 # Rough final size of crater (km) appeal to plots of the impact
 
-# exclusion parameters
+# exclusion parameters (not stored anywhere but here)
 esc_vel = 11.2 # escape velocity (km/s)
 crit_angle = 1.3 # minimum angle to be considered uplift (rad)
 
