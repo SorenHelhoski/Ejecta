@@ -1,5 +1,7 @@
 # Ejecta
-For use in analyzing the properties of ejecta from an iSALE impact
+For use in analyzing the properties of ejecta from an iSALE impact:
+
+As of now, the code is formatted to handle a spherical impactor made of one material, and up to three layers of a flat impact surface using the 2D cylindrically symmetric iSALE shock code.
 
 Create a directory on the same level as Chicxulub, Plotting, BenchmarkData directories 
 
