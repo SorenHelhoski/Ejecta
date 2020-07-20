@@ -13,9 +13,15 @@ Rough description of method: tracers passing above y=0 are appended to an ejecta
 
 aux_library doesn't need to be run, contains Binning and KDE functions
 
-Launch.py : mass density dist, velocity & angle dist \n
-Landing.py : landing loc dist, pres & temp dist, cumulative ejecta \n
-Panels.py : KDEs and histograms of the peak pressure anf temp, pressure curve fit to gaussian \n
-OriginLand.py : (on left) materials; (on right) landing location \n
-OriginPres.py : peak pressure throughout the simulation (only ejecta plotted on right) \n
-OriginTemp.py : (on left) peak temperature throughout the simulation; (on right) peak temperature up to lauch point \n
+Launch.py : mass density dist, velocity & angle dist 
+
+Landing.py : landing loc dist, pres & temp dist, cumulative ejecta 
+
+Panels.py : KDEs and histograms of the peak pressure anf temp, pressure curve fit to gaussian 
+
+OriginLand.py : (on left) materials; (on right) landing location 
+
+OriginPres.py : peak pressure throughout the simulation (only ejecta plotted on right) 
+
+OriginTemp.py : (on left) peak temperature throughout the simulation; (on right) peak temperature up to lauch point 
+
