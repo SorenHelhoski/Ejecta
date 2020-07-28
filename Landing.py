@@ -132,6 +132,11 @@ for each in r_list:
 
 print('DONE\n')
 
+def annulus(x, a, b):
+    R_1 = x-(a[1]-a[0])/b
+    R_2 = x+(a[1]-a[0])/b
+    return np.pi*(R_2**2-R_1**2)
+
 # Landing Position
 fig = plt.figure(figsize=(12, 6)) # ejecta landing position graph
 ax=fig.add_subplot(111) # ejecta landing position
@@ -143,7 +148,7 @@ ax.set_title('Ejecta Landing Location')
 ax.text((landing_bounds[1]-landing_bounds[0])/2, .7*max(height_expected), 'Curve Fit: {0:0.3}r^({1:0.3f})'.format(A_fit,B_fit))
 
 ax.plot(r_list, height_expected)
-ax.bar(r_bin, height, width = w, alpha =.1, align = 'center', xerr = r_err, yerr = h_err)
+ax.bar(r_bin, height1, width = w, alpha =.1, align = 'center', xerr = r_err, yerr = h_err)
 
 fig.savefig('{}/Landing Location (bin={}).png'.format(dirname,landing_bin))
 print('Saved: Landing Location (bin={}).png'.format(landing_bin))
@@ -157,7 +162,7 @@ ax.set_xlabel('Landing Location [km]')
 ax.set_ylabel('Ejecta Height [km]')
 ax.set_title('Ejecta Landing Location')
 
-ax.bar(r_bin_all, height_all, width = w_all, alpha =.1, align = 'center', xerr = r_err_all, yerr = h_err_all)
+ax.bar(r_bin_all, height_all1, width = w_all, alpha =.1, align = 'center', xerr = r_err_all, yerr = h_err_all)
 
 fig.savefig('{}/Landing Location (All) (bin={}).png'.format(dirname,landing_bin))
 print('Saved: Landing Location (All) (bin={}).png'.format(landing_bin))
