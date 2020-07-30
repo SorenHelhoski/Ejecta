@@ -94,6 +94,11 @@ print('Saved: Temperature_Hist(bin={}).png\n'.format(temp_bin))
 
 print('Binning the Landing Positions every {} km...'.format(int(sep_size)))
 
+def annulus(x, Range, Bins):
+    R_1 = x-(Range[1]-Range[0])/(2*Bins)
+    R_2 = x+(Range[1]-Range[0])/(2*Bins)
+    return np.pi*(R_2**2-R_1**2)
+
 # order the landing position
 r_list.sort()
 location = Bin(r_list, bins = landing_bin, bounds = landing_bounds)
@@ -101,17 +106,27 @@ location = Bin(r_list, bins = landing_bin, bounds = landing_bounds)
 r_bin  = location.get_x()
 r_err  = location.get_xerr()
 w      = location.get_xerr(factor=2)
-height = location.get_y(factor=Norm)
-h_err  = location.get_yerr(factor=Norm)
+height0= location.get_y(factor=Norm)
+h_err0 = location.get_yerr(factor=Norm)
 
+height, h_err = [],[]
+for i in range(len(height0)):
+    height.append(height0[i]/annulus(r_bin[i],landing_bounds,landing_bin))
+    h_err.append(h_err0[i]/annulus(r_bin[i],landing_bounds,landing_bin))
 
 location_all = Bin(r_list, bins = landing_bin, bounds = [0, max(r_list)])
 
 r_bin_all  = location_all.get_x()
 r_err_all  = location_all.get_xerr()
 w_all      = location_all.get_xerr(factor=2)
-height_all = location_all.get_y(factor=Norm)
-h_err_all  = location_all.get_yerr(factor=Norm)
+height_all0 = location_all.get_y(factor=Norm)
+h_err_all0  = location_all.get_yerr(factor=Norm)
+
+height_all, h_err_all = [],[]
+for i in range(len(height0)):
+    height_all.append(height_all0[i]/annulus(r_bin[i],landing_bounds,landing_bin))
+    h_err_all.append(h_err_all0[i]/annulus(r_bin[i],landing_bounds,landing_bin))
+
 cumulative = location_all.get_cmlt()
 cmlt_right = location_all.get_cmltr()
 
@@ -132,11 +147,6 @@ for each in r_list:
 
 print('DONE\n')
 
-def annulus(x, a, b):
-    R_1 = x-(a[1]-a[0])/b
-    R_2 = x+(a[1]-a[0])/b
-    return np.pi*(R_2**2-R_1**2)
-
 # Landing Position
 fig = plt.figure(figsize=(12, 6)) # ejecta landing position graph
 ax=fig.add_subplot(111) # ejecta landing position
@@ -148,7 +158,7 @@ ax.set_title('Ejecta Landing Location')
 ax.text((landing_bounds[1]-landing_bounds[0])/2, .7*max(height_expected), 'Curve Fit: {0:0.3}r^({1:0.3f})'.format(A_fit,B_fit))
 
 ax.plot(r_list, height_expected)
-ax.bar(r_bin, height1, width = w, alpha =.1, align = 'center', xerr = r_err, yerr = h_err)
+ax.bar(r_bin, height, width = w, alpha =.1, align = 'center', xerr = r_err, yerr = h_err)
 
 fig.savefig('{}/Landing Location (bin={}).png'.format(dirname,landing_bin))
 print('Saved: Landing Location (bin={}).png'.format(landing_bin))
@@ -162,7 +172,7 @@ ax.set_xlabel('Landing Location [km]')
 ax.set_ylabel('Ejecta Height [km]')
 ax.set_title('Ejecta Landing Location')
 
-ax.bar(r_bin_all, height_all1, width = w_all, alpha =.1, align = 'center', xerr = r_err_all, yerr = h_err_all)
+ax.bar(r_bin_all, height_all, width = w_all, alpha =.1, align = 'center', xerr = r_err_all, yerr = h_err_all)
 
 fig.savefig('{}/Landing Location (All) (bin={}).png'.format(dirname,landing_bin))
 print('Saved: Landing Location (All) (bin={}).png'.format(landing_bin))

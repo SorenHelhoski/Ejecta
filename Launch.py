@@ -168,9 +168,9 @@ freq3 = Mass3.get_y(factor = dens3/bins)
 xs = Mass0.get_x()
 mass = []
 
-def annulus(x, a, b):
-    R_1 = x-(a[1]-a[0])/bins
-    R_2 = x+(a[1]-a[0])/bins
+def annulus(x, Range, Bins):
+    R_1 = x-(Range[1]-Range[0])/(2*Bins)
+    R_2 = x+(Range[1]-Range[0])/(2*Bins)
     return np.pi*(R_2**2-R_1**2)
 
 total_mass = 0
