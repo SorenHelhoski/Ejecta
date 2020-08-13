@@ -22,6 +22,7 @@ print('Opening data file...')
 file2 = open('data.txt','r')
 x_list = list(eval(file2.readline().replace('\n','')))
 y_list = list(eval(file2.readline().replace('\n','')))
+w_list = list(eval(file2.readline().replace('\n','')))
 v_list = list(eval(file2.readline().replace('\n','')))
 b_list = list(eval(file2.readline().replace('\n','')))
 p_list = list(eval(file2.readline().replace('\n','')))
@@ -107,8 +108,6 @@ def model_func(x,A,B,C):
 KDE_P = [[None,None,None,None]]
 
 NKDE_P = [[None,None, None,None]]
-
-#guess = [[530, 6, 10],[360, 6, 10],[260, 8, 11],[190, 10, 12],[150, 11, 14],[100, 14, 14],[70, 15, 12],[50, 15, 11],[40, 15, 11],[30, 15, 6]]
 
 param = []
 

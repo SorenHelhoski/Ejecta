@@ -14,19 +14,25 @@ mass_bins = 100  # number of bins in the mass density graphs
 
 #(must have three sig figs for formatting)
 guesses_velocity = [14000, -2.00] # initial guesses
-guesses_mass     = [2.000*10**19,-4.30] # initial guesses
 
-#densities of materials in kg/km^3
-dens0 = 3.25*10**12 # density of impactor
-dens1 = 2.5*10**12  # density of crust
-dens2 = 3.25*10**12 # density of mantle
+#densities of materials in kg/m^3
+dens0 = 3.25*10**3 # density of impactor
+dens1 = 2.5*10**3  # density of crust
+dens2 = 3.25*10**3 # density of mantle
 dens3 = 0           # density of core
+
+#change to kg/km^3
+dens0 = dens0*10**9 
+dens1 = dens1*10**9
+dens2 = dens2*10**9
+dens3 = dens3*10**9           
 
 print('Opening data file...')
 # open tracer file
 file2 = open('data.txt','r')
 x_list = list(eval(file2.readline().replace('\n','')))
 y_list = list(eval(file2.readline().replace('\n','')))
+w_list = list(eval(file2.readline().replace('\n','')))
 v_list = list(eval(file2.readline().replace('\n','')))
 b_list = list(eval(file2.readline().replace('\n','')))
 p_list = list(eval(file2.readline().replace('\n','')))
@@ -136,58 +142,102 @@ ax4.errorbar(x_bin, b_bin, xerr = x_err, yerr = b_err)
 fig.savefig('{}/Tracer Launch (bin={}).png'.format(dirname, launch_bin))
 print('Saved: Tracer Launch (bin={}).png\n'.format(launch_bin))
 
+trajectory = [] #trajector array of all paths
+def parabolic_trajectory(x0,y0,v0,b,t0, t_step = 10,t_max = 1050):
+    t,y = 0,0
+    x_pos = []
+    y_pos = []
+    vx = v0*np.cos(b)
+    vy = v0*np.sin(b)
+    while t < t0:
+        x_pos.append(x0)
+        y_pos.append(0)
+        t += t_step
+    while y >= 0 and t < t_max:
+        x = x0 + vx*(t-t0)
+        y = y0-0.5*g*(t-t0)**2+vy*(t-t0)
+        x_pos.append(x)
+        y_pos.append(y)
+        t += t_step
+    while t < t_max:
+        x_pos.append(x)
+        y_pos.append(y)
+        t += t_step
+    return x_pos,y_pos
+
+print('\nCreating Trajectories...')
+
+for each in range(len(x_list)):
+    ptraj = parabolic_trajectory(x_list[each],y_list[each],v_list[each],b_list[each],t_list[each])
+    trajectory.append(ptraj)
+
+print('DONE\n')
+
+# Trajectories
+fig = plt.figure(figsize=(12, 6))
+ax=fig.add_subplot(111)
+ax.set_ylabel('Height [km]')
+ax.set_xlabel('Distance [km]')
+ax.set_aspect('equal')
+'''for traj in trajectory:
+    ax.plot(traj[0],traj[1], c ='gray', linewidth = .1)
+fig.savefig('{}/Tracer Trajectory.png'.format(dirname, launch_bin))'''
+print('Saved: Tracer Trajectory.png\n'.format(launch_bin))
+
 #------------------------------------------------------------
 #                     Mass Density Dist
 #------------------------------------------------------------
 
 
-mass1, mass2, mass3, mass0 = [],[],[],[]
+x1, x2, x3, x0 = [],[],[],[] # launch pos from each material
+w1, w2, w3, w0 = [],[],[],[] # volume of each tracer
 for i in range(len(m_list)):
     if m_list[i] == 'impactor':
-        mass0.append(x_list[i])
+        x0.append(x_list[i]/R)
+        w0.append(w_list[i])
     elif m_list[i] == 'crust':
-        mass1.append(x_list[i])
+        x1.append(x_list[i]/R)
+        w1.append(w_list[i])
     elif m_list[i] == 'mantle':
-        mass2.append(x_list[i])
+        x2.append(x_list[i]/R)
+        w2.append(w_list[i])
     else:
-        mass3.append(x_list[i])
+        x3.append(x_list[i]/R)
+        w3.append(w_list[i])
 
 bins = mass_bins
-Bounds = [0,max(x_list)]
 
-Mass0 = Bin(mass0, bounds = Bounds, bins=bins)
-Mass1 = Bin(mass1, bounds = Bounds, bins=bins)
-Mass2 = Bin(mass2, bounds = Bounds, bins=bins)
-Mass3 = Bin(mass3, bounds = Bounds, bins=bins)
+vol0 = Bin(x0, weight=w0, bins=bins)
+vol1 = Bin(x1, weight=w1, bins=bins)
+vol2 = Bin(x2, weight=w2, bins=bins)
+vol3 = Bin(x3, weight=w3, bins=bins)
 
-freq0 = Mass0.get_y(factor = dens0/bins)
-freq1 = Mass1.get_y(factor = dens1/bins)
-freq2 = Mass2.get_y(factor = dens2/bins)
-freq3 = Mass3.get_y(factor = dens3/bins)
+freq0 = vol0.get_y(factor = dens0)
+freq1 = vol1.get_y(factor = dens1)
+freq2 = vol2.get_y(factor = dens2)
+freq3 = vol3.get_y(factor = dens3)
 
-xs = Mass0.get_x()
+xs = vol1.get_x()
 mass = []
 
-def annulus(x, Range, Bins):
-    R_1 = x-(Range[1]-Range[0])/(2*Bins)
-    R_2 = x+(Range[1]-Range[0])/(2*Bins)
-    return np.pi*(R_2**2-R_1**2)
-
 total_mass = 0
+width = (max(xs)-min(xs))/(bins)
 for i in range(len(xs)):
     mass_in_bin = freq0[i]+freq1[i]+freq2[i]+freq3[i]
     total_mass += mass_in_bin
-    mass.append((mass_in_bin)/annulus(xs[i],Bounds,bins))
+    mass.append(10**-6*(mass_in_bin)/(2*np.pi*xs[i]*R*width*R))
 
 xs_fit = []
 mass_fit = []
 for i in range(len(xs)):
-    if xs[i] > R:
+    if xs[i] > 1:
         xs_fit.append(xs[i])
         mass_fit.append(mass[i])
 
 def model_func(x,A,B):
     return A * x ** B 
+
+guesses_mass = [max(mass_fit),-4.30] # initial guesses
 
 try:
     popt, pcov = fit(model_func, xs_fit, mass_fit, p0 = mass_guesses)
@@ -203,8 +253,8 @@ for i in xs_fit:
 
 fig = plt.figure(figsize=(12, 6)) 
 ax=fig.add_subplot(111) 
-ax.set_xlabel('Distance [km]')
-ax.set_ylabel('Mass per Area [kg km^-2]')
+ax.set_xlabel('Normed Distance [{} km]'.format(R))
+ax.set_ylabel('Mass per Area [kg m^-2]')
 ax.scatter(xs,mass)
 ax.scatter(xs_fit,mass_fit)
 ax.plot(xs_fit,curve)

@@ -8,18 +8,17 @@ from scipy.optimize import curve_fit as fit
 dirname = 'Landing'
 psp.mkdir_p(dirname)
 
-landing_bin = 50 # number of bins of the landing position of ejecta
+landing_bin = 20 # number of bins of the landing position of ejecta
+landing_bin_all = 60 # number of bins of the full landing position of ejecta
 pres_bin = 20 # number of bins in the pressure histogram
 temp_bin = 30 # number of bins in the temperature histogram
-
-guesses = [14.00*10**6, -2.300] # guesses for the landing loc curve A*x^B
-#(must have three sig figs for formatting)
 
 print('Opening data file...')
 # open tracer file
 file2 = open('data.txt','r')
 x_list = list(eval(file2.readline().replace('\n','')))
 y_list = list(eval(file2.readline().replace('\n','')))
+w_list = list(eval(file2.readline().replace('\n','')))
 v_list = list(eval(file2.readline().replace('\n','')))
 b_list = list(eval(file2.readline().replace('\n','')))
 p_list = list(eval(file2.readline().replace('\n','')))
@@ -31,9 +30,15 @@ used =   list(eval(file2.readline().replace('\n','')))
 jumps, start_time, end_time, save_step, R, grid_spacing, g, a, v_0, layers  = eval(file2.readline().replace('\n',''))
 print('DONE\n')
 
-landing_bounds = [.9*R,3.1*R]
+R_list = []
+for each in r_list:
+    R_list.append(each/R)
+
+landing_bounds = [.9,3.1]
 sep_size = (landing_bounds[1] - landing_bounds[0])/landing_bin
-Norm = grid_spacing**2/(sep_size) # used to change tracer freq to height
+
+guesses = [.14*R**(.74), -3.000] # guesses for the landing loc curve A*x^B
+#(must have three sig figs for formatting)
 
 #------------------------------------------------------------
 #                          Graphing
@@ -92,40 +97,40 @@ print('Saved: Temperature_Hist(bin={}).png\n'.format(temp_bin))
 #                       Landing Position
 #------------------------------------------------------------
 
-print('Binning the Landing Positions every {} km...'.format(int(sep_size)))
-
-def annulus(x, Range, Bins):
-    R_1 = x-(Range[1]-Range[0])/(2*Bins)
-    R_2 = x+(Range[1]-Range[0])/(2*Bins)
-    return np.pi*(R_2**2-R_1**2)
+print('Binning the Landing Positions every {} km...'.format(int(R*sep_size)))
 
 # order the landing position
-r_list.sort()
-location = Bin(r_list, bins = landing_bin, bounds = landing_bounds)
+R_list.sort()
+location = Bin(R_list, weight = w_list, bins = landing_bin, bounds = landing_bounds)
 
 r_bin  = location.get_x()
 r_err  = location.get_xerr()
 w      = location.get_xerr(factor=2)
-height0= location.get_y(factor=Norm)
-h_err0 = location.get_yerr(factor=Norm)
+vol    = location.get_y()
+v_err  = location.get_yerr()
 
 height, h_err = [],[]
-for i in range(len(height0)):
-    height.append(height0[i]/annulus(r_bin[i],landing_bounds,landing_bin))
-    h_err.append(h_err0[i]/annulus(r_bin[i],landing_bounds,landing_bin))
+width = (landing_bounds[1]-landing_bounds[0])/(landing_bin)
+for i in range(len(vol)):
+    height.append(vol[i]/(2*np.pi*r_bin[i]*R*width*R))
+    h_err.append(v_err[i]/(2*np.pi*r_bin[i]*R*width*R))
 
-location_all = Bin(r_list, bins = landing_bin, bounds = [0, max(r_list)])
+location_all = Bin(R_list, weight = w_list, bins = landing_bin_all)
 
 r_bin_all  = location_all.get_x()
 r_err_all  = location_all.get_xerr()
 w_all      = location_all.get_xerr(factor=2)
-height_all0 = location_all.get_y(factor=Norm)
-h_err_all0  = location_all.get_yerr(factor=Norm)
+vol_all    = location_all.get_y()
+v_err_all  = location_all.get_yerr()
+
+print(vol_all)
 
 height_all, h_err_all = [],[]
-for i in range(len(height0)):
-    height_all.append(height_all0[i]/annulus(r_bin[i],landing_bounds,landing_bin))
-    h_err_all.append(h_err_all0[i]/annulus(r_bin[i],landing_bounds,landing_bin))
+width = (max(R_list)-min(R_list))/(landing_bin_all)
+print(width*R)
+for i in range(len(vol_all)):
+    height_all.append(vol_all[i]/(2*np.pi*r_bin_all[i]*R*width*R))
+    h_err_all.append(v_err_all[i]/(2*np.pi*r_bin_all[i]*R*width*R))
 
 cumulative = location_all.get_cmlt()
 cmlt_right = location_all.get_cmltr()
@@ -134,30 +139,34 @@ def model_func(x,A,B):
     return A * x ** B 
 
 try:
-    popt, pcov = fit(model_func, r_bin, height, p0 = guesses, sigma = h_err)
+    popt, pcov = fit(model_func, r_bin, height, p0 = guesses, bounds = [[.001,-6],[R/10,-1]], method = 'dogbox')
     A_fit, B_fit = popt 
 except:
     A_fit, B_fit = guesses
-    print('Could not find appropriate fit; Change initial guesses')
+    print('Could not find appropriate fit')
 
 # fit for Data
 height_expected = []
-for each in r_list:
+formula_height = []
+for each in R_list:
     height_expected.append(model_func(each, A_fit, B_fit))
+    formula_height.append(model_func(each, guesses[0], guesses[1]))
 
 print('DONE\n')
 
 # Landing Position
 fig = plt.figure(figsize=(12, 6)) # ejecta landing position graph
 ax=fig.add_subplot(111) # ejecta landing position
-ax.set_xlabel('Landing Location [km]')
+ax.set_xlabel('Normed Landing Location [{}km]'.format(R))
 ax.set_ylabel('Ejecta Height [km]')
 ax.set_xlim(landing_bounds)
 ax.set_yscale('log')
 ax.set_title('Ejecta Landing Location')
 ax.text((landing_bounds[1]-landing_bounds[0])/2, .7*max(height_expected), 'Curve Fit: {0:0.3}r^({1:0.3f})'.format(A_fit,B_fit))
+ax.text((landing_bounds[1]-landing_bounds[0])/2, .5*max(height_expected), 'Theoretical: {0:0.3}r^({1:0.3f})'.format(guesses[0],guesses[1]))
 
-ax.plot(r_list, height_expected)
+ax.plot(R_list, height_expected)
+ax.plot(R_list, formula_height, linestyle = ':')
 ax.bar(r_bin, height, width = w, alpha =.1, align = 'center', xerr = r_err, yerr = h_err)
 
 fig.savefig('{}/Landing Location (bin={}).png'.format(dirname,landing_bin))
@@ -167,39 +176,40 @@ print('Saved: Landing Location (bin={}).png'.format(landing_bin))
 fig = plt.figure(figsize=(12, 6)) # ejecta landing position graph
 ax=fig.add_subplot(111) # ejecta landing position
 ax.set_yscale('log')
-ax.set_ylim(1, 1.1*max(height_all))
-ax.set_xlabel('Landing Location [km]')
+#ax.set_xlim(.9, 3.1)
+#ax.set_ylim(1, 1.1*max(height_all))
+ax.set_xlabel('Normed Landing Location [{}km]'.format(R))
 ax.set_ylabel('Ejecta Height [km]')
 ax.set_title('Ejecta Landing Location')
 
 ax.bar(r_bin_all, height_all, width = w_all, alpha =.1, align = 'center', xerr = r_err_all, yerr = h_err_all)
 
-fig.savefig('{}/Landing Location (All) (bin={}).png'.format(dirname,landing_bin))
-print('Saved: Landing Location (All) (bin={}).png'.format(landing_bin))
+fig.savefig('{}/Landing Location (All) (bin={}).png'.format(dirname,landing_bin_all))
+print('Saved: Landing Location (All) (bin={}).png'.format(landing_bin_all))
 
 # Landing Position Cumulative
 fig = plt.figure(figsize=(12, 6))
 ax=fig.add_subplot(111)
-ax.set_xlabel('Landing Location [km]')
+ax.set_xlabel('Normed Landing Location [{}km]'.format(R))
 ax.set_ylabel('Cumulative Ejecta Fraction')
 ax.set_title('Ejecta Landing Location')
 ax.plot(r_bin_all, cumulative)
-ax.plot([0,max(r_list)], [cumulative[-1],cumulative[-1]], linestyle = ':')
-ax.plot([0,max(r_list)], [0,0], linestyle = ':')
+ax.plot([0,max(R_list)], [cumulative[-1],cumulative[-1]], linestyle = ':')
+ax.plot([0,max(R_list)], [0,0], linestyle = ':')
 
-fig.savefig('{}/Cumulative Landing Location (bin={}).png'.format(dirname,landing_bin))
-print('Saved: Cumulative Landing Location (bin={}).png'.format(landing_bin))
+fig.savefig('{}/Cumulative Landing Location (bin={}).png'.format(dirname,landing_bin_all))
+print('Saved: Cumulative Landing Location (bin={}).png'.format(landing_bin_all))
 
 # Landing Position Cumulative from Right
 fig = plt.figure(figsize=(12, 6)) 
 ax=fig.add_subplot(111)
-ax.set_xlabel('Landing Location [km]')
+ax.set_xlabel('Normed Landing Location [{}km]'.format(R))
 ax.set_ylabel('Cumulative Ejecta Fraction')
 ax.set_title('Ejecta Landing Location')
 ax.plot(r_bin_all, cmlt_right)
-ax.plot([0,max(r_list)], [cmlt_right[0],cmlt_right[0]], linestyle = ':')
-ax.plot([0,max(r_list)], [0,0], linestyle = ':')
+ax.plot([0,max(R_list)], [cmlt_right[0],cmlt_right[0]], linestyle = ':')
+ax.plot([0,max(R_list)], [0,0], linestyle = ':')
 
-fig.savefig('{}/Cumulative (R) Landing Location (bin={}).png'.format(dirname,landing_bin))
-print('Saved: Cumulative (R) Landing Location (bin={}).png'.format(landing_bin))
+fig.savefig('{}/Cumulative (R) Landing Location (bin={}).png'.format(dirname,landing_bin_all))
+print('Saved: Cumulative (R) Landing Location (bin={}).png'.format(landing_bin_all))
 

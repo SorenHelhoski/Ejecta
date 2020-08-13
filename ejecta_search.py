@@ -39,7 +39,7 @@ for line in ast_input:
 
 save_step = ast_dict['DTSAVE']             # save interval of sim (s)
 grid_spacing = ast_dict['GRIDSPC'] *.001   # (km)
-g   = ast_dict['GRAV_V'] * -0.001           # gravity (km/s^2)
+g   = ast_dict['GRAV_V'] * -0.001          # gravity (km/s^2)
 a   = ast_dict['OBJRESH'] * grid_spacing   # radius of impactor (km)
 v_0 = ast_dict['OBJVEL'] * -0.001          # impact velcity (km/s)
 
@@ -73,16 +73,18 @@ pres = np.append(np.zeros(0), step1.TrP/10**9)
 print('Using timestep {0} of {1} with {2} tracers'.format(model1.nsteps-1, peak_file, len(pres)))
 print('DONE\n')
 
-# extract the materials
+# extract the materials and weights
 print('Extracting Materials...')
 data_file = 'jdata.dat'
 model=psp.opendatfile('../Chicxulub/{}'.format(data_file))
 model.setScale('km')
 step = model.readStep('TrT', 0)
+xx_0 = np.append(np.zeros(0), step.xmark)
 yy_0 = np.append(np.zeros(0), step.ymark)
 
 #get the materials:
 mat = []    # materials of all tracers
+weight = [] # weights of all the tracers
 for i in range(len(yy_0)): # sort based on initial location
     if yy_0[i] > layers[0]:
         mat.append('impactor')
@@ -92,6 +94,7 @@ for i in range(len(yy_0)): # sort based on initial location
         mat.append('mantle') 
     else:                # deepest layer
         mat.append('core')
+    weight.append(2*np.pi*xx_0[i]*grid_spacing**2)
         
 print('Using timestep {0} of {1} with {2} tracers'.format(0, data_file, len(mat)))
 print('DONE\n')
@@ -118,6 +121,7 @@ yy_0 = np.append(np.zeros(0), step.ymark)
 # inintialize lists
 x_list = [] # x position (km)
 y_list = [] # y position (km)
+w_list = [] # volume of material for that tracer [km3]
 v_list = [] # velocity (normalized to v_0)
 b_list = [] # angles (radians)
 p_list = [] # peak pressure (GPa)
@@ -126,6 +130,9 @@ m_list = [] # material list
 t_list = [] # launch times (s)
 r_list = [] # landing position (km)
 used = []   # tracers that have already been used
+
+excluded = [0,0,0] # number of rejected tracers
+                   # both, above escape, above angle
 
 # Loop over Tracers for Considered Timesteps
 
@@ -153,13 +160,16 @@ for time in range(start_time , end_time+1):
             if D_x <= 0 or D_y <= 0:
                 # pass over tracers that are traveling down or in
                 continue
-            #if velocity < 15000*(xx_1[each])**-2:
-                # added in log regime
-                #continue
 
             used.append(each) # indexes of previously used tracers
 
-            if D_y/save_step < esc_vel and angle < crit_angle:
+            if D_y/save_step > esc_vel and angle > crit_angle:
+                excluded[0] += 1
+            elif D_y/save_step > esc_vel:
+                excluded[1] += 1
+            elif angle > crit_angle:
+                excluded[2] += 1
+            else:
                 # rejected tracers of this statement are excluded forever
                 # tracers above escape velocity and above critical angle
                 x_list.append(xx_1[each]) # x position normalized
@@ -173,17 +183,21 @@ for time in range(start_time , end_time+1):
 for each in used:
     p_list.append(pres[each])
     m_list.append(mat[each])
+    w_list.append(weight[each])
 
 print('==============================')
 print('Finalizing Ejecta Search...')
 print('==============================')
 
 # order the list in same fashion based on x_list
-x_list, y_list, v_list, b_list, p_list, T_list,m_list, t_list, used = zip(*sorted(zip(x_list, y_list, v_list, b_list, p_list, T_list, m_list, t_list, used)))
+x_list, y_list, w_list, v_list, b_list, p_list, T_list,m_list, t_list, used = zip(*sorted(zip(x_list, y_list, w_list, v_list, b_list, p_list, T_list, m_list, t_list, used)))
 
 print('Total Number of Ejecta Tracers: {}'.format(len(used))) 
 print('Final Ejecta Launch at Time   : {}'.format(max(t_list)))
 print('                      Timestep: {}'.format(int(max(t_list)/save_step)))
+print('Above escape velocity     : {}'.format(excluded[0]+excluded[1])) 
+print('Above critical angle      : {}'.format(excluded[0]+excluded[2])) 
+print('overlap of velocity+angle : {}'.format(excluded[0])) 
 print('DONE\n')
       
 print('Calculating Landing Positions...')
@@ -206,6 +220,7 @@ prop = [jumps, start_time, end_time, save_step, R, grid_spacing, g, a, v_0, laye
 
 file0.write(str(x_list)+'\n')
 file0.write(str(y_list)+'\n')
+file0.write(str(w_list)+'\n')
 file0.write(str(v_list)+'\n')
 file0.write(str(b_list)+'\n')
 file0.write(str(p_list)+'\n')

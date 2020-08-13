@@ -14,9 +14,20 @@ bounds determine the upper and lower limit of counting frequencies
 '''
 
 class Bin:
-    def __init__(self,x_list, bins = 10, bounds = [0,1000]):
+    def __init__(self,x_list, weight=[], bins = 10, bounds = []):
+
+        #set the weights if no value is given
+        if weight == []:
+            for i in range(len(x_list)):
+                weight.append(1)
         
-        x_list.sort()
+        if x_list != []:
+            x_list, weight = zip(*sorted(zip(x_list, weight)))
+            if bounds == []:
+                bounds = [min(x_list),max(x_list)]
+        else:
+            bounds = [0,1] # dummy values to keep from crashing when empty
+
         lower, upper = bounds
         bin_size = (upper - lower) / bins
 
@@ -25,6 +36,7 @@ class Bin:
         x_bin = [] # average of each
         x_err = [] # std of each bin
         x_ = [] # temporary list of each bin
+        y_ = [] # temporary list of weighted frequencies
         freq = [] # frequency of tracers in each bin
         freq_err = []
     
@@ -41,17 +53,19 @@ class Bin:
             # append to temporary bin list if within the bounds
             if bottom <= x_list[i] <= bottom + bin_size:
                 x_.append(x_list[i])
+                y_.append(weight[i])
                 i += 1
             else:
                 x_bin.append(bottom+bin_size/2)
-                freq.append(len(x_))
-                freq_err.append((len(x_))**(1/2))
+                freq.append(sum(y_))
+                freq_err.append((sum(y_))**(1/2))
                 x_err.append(np.std(x_))
                 x_ = []
+                y_ = []
                 bottom += bin_size
         x_bin.append(bottom+bin_size/2)
-        freq.append(len(x_))
-        freq_err.append((len(x_))**(1/2))
+        freq.append(sum(y_))
+        freq_err.append((sum(y_))**(1/2))
         x_err.append(np.std(x_))
 
         while len(x_bin) <= bins:
