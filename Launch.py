@@ -29,7 +29,7 @@ dens3 = dens3*10**9
 
 print('Opening data file...')
 # open tracer file
-file2 = open('data.txt','r')
+file2 = open('Results.dat','r')
 x_list = list(eval(file2.readline().replace('\n','')))
 y_list = list(eval(file2.readline().replace('\n','')))
 w_list = list(eval(file2.readline().replace('\n','')))
@@ -41,7 +41,7 @@ m_list = list(eval(file2.readline().replace('\n','')))
 t_list = list(eval(file2.readline().replace('\n','')))
 r_list = list(eval(file2.readline().replace('\n','')))
 used =   list(eval(file2.readline().replace('\n','')))
-jumps, start_time, end_time, save_step, R, grid_spacing, g, a, v_0, layers  = eval(file2.readline().replace('\n',''))
+jumps, start_time, end_time, save_step, R, grid_spacing, g, a, v_0, layers, datafile  = eval(file2.readline().replace('\n',''))
 print('DONE\n')
 
 #------------------------------------------------------------
@@ -77,6 +77,34 @@ for each in range(0,len(x_list),launch_bin):
     b_err.append(np.std(b_))
 
 print('DONE\n')
+
+#------------------------------------------------------------
+#                          Heights
+#------------------------------------------------------------
+
+height = []
+
+def max_height(y0,v0,b0,g0):
+    return y0+((v0*sin(b0))**2)/(2*g0)
+
+for i in range(len(y_list)):
+    height.append(max_height(y_list[i],v_list[i],b_list[i],g))
+
+heights = Bin(height, weight=w_list, bins = 100)
+
+h_x = heights.get_x()
+height_spread = heights.get_cmltr()
+
+fig = plt.figure(figsize=(12, 6))
+ax = fig.add_subplot(111)
+ax.set_title('Launch Height Reached by Tracers')
+ax.set_xlabel('Max Parabolic Height')
+ax.set_ylabel('Fraction that Reach Height Threshold')
+ax.plot([0,max(height)], [0,0], linestyle=':')
+ax.plot([0,max(height)], [1,1], linestyle=':')
+ax.plot(h_x, height_spread)
+fig.savefig('{}/Tracer Height.png'.format(dirname))
+print('Saved: Tracer Height.png\n')
 
 #------------------------------------------------------------
 #                          Launch Graphs

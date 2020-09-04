@@ -94,6 +94,7 @@ class Bin:
         self.freq_err = freq_err
         self.cmlt     = cmlt
         self.cmltr    = cmltr
+        self.bin_size = bin_size
 
     def get_cmlt(self): # returns the cumulative percent dist (from left)
         cmlt_ = []
@@ -133,6 +134,15 @@ class Bin:
             dummy.append(float(each)*factor)
         return dummy
 
+    def get_norm_y(self, factor=1): # returns the freq in each bin
+        dummy = []
+        for each in self.freq:
+            dummy.append(float(each)*factor)
+        dummy0 = []
+        for each in dummy:
+            dummy0.append(float(each)/sum(dummy))
+        return dummy0
+
 #--------------------------------------------------------------------------------
 
 # KDE class
@@ -152,8 +162,12 @@ This does not alter the KDE, only how many points of it are returned
 '''
 
 class Density:
-    def __init__(self, x_list, bounds = [0,1000], resolution = 100):
+    def __init__(self, x_list, weight=[], bounds = [0,1000], resolution = 100):
         
+        #set the weights if no value is given
+        if weight == []:
+            for i in range(len(x_list)):
+                weight.append(1)
         
         lower, upper = bounds
         step_size = (upper-lower)/resolution
@@ -168,7 +182,7 @@ class Density:
         while lower <= i <= upper:
             pdf = 0
             for j in range(len(x_list)):
-                pdf += np.exp( (-0.5)*((i-x_list[j])/(optimal_bandwidth))**2 )/(sqrt(2*np.pi))
+                pdf += weight[j]*np.exp( (-0.5)*((i-x_list[j])/(optimal_bandwidth))**2 )/(sqrt(2*np.pi))
     
             x_positions.append(i)
             prob_dens.append(pdf)

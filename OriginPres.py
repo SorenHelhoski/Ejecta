@@ -12,7 +12,7 @@ max_pres = 200 # maximum pressure in the colormap [GPa]
 
 print('Opening data file...')
 # open tracer file
-file2 = open('data.txt','r')
+file2 = open('Results.dat','r')
 x_list = list(eval(file2.readline().replace('\n','')))
 y_list = list(eval(file2.readline().replace('\n','')))
 w_list = list(eval(file2.readline().replace('\n','')))
@@ -24,7 +24,7 @@ m_list = list(eval(file2.readline().replace('\n','')))
 t_list = list(eval(file2.readline().replace('\n','')))
 r_list = list(eval(file2.readline().replace('\n','')))
 used =   list(eval(file2.readline().replace('\n','')))
-jumps, start_time, end_time, save_step, R, grid_spacing, g, a, v_0, layers  = eval(file2.readline().replace('\n',''))
+jumps, start_time, end_time, save_step, R, grid_spacing, g, a, v_0, layers, datafile  = eval(file2.readline().replace('\n',''))
 print('DONE\n')
     
 
@@ -34,14 +34,14 @@ psp.mkdir_p(dirname)
 
 print('Extracting Peak Pressures...')
 # read the last timestep
-model1=psp.opendatfile('../Chicxulub/jdata.dat')
+model1=psp.opendatfile(datafile)
 model1.setScale('km')
 step1 = model1.readStep('TrP', model1.nsteps-1)
 peak = np.append(np.zeros(0), step1.TrP/10**9)
 print('DONE\n')
 
 # Open the datafile
-model=psp.opendatfile('../Chicxulub/jdata.dat')
+model=psp.opendatfile(datafile)
 model.setScale('km')
 
 print('Saving Images...')

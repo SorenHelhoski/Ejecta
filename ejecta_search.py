@@ -2,23 +2,42 @@ import numpy as np
 from math import atan, pi, sqrt, sin, cos, floor
 import pySALEPlot as psp
 
+#get the users name and the name of the '..' directory
+import os
+strPath = os.path.realpath(__file__)
+nmFolders = strPath.split( os.path.sep )
+user = nmFolders[-5]
+filename = nmFolders[-3] # I name the jdata file after the '../../' directory
+
 #============================================================
-#                Manually Changed Parameters 
+#                      Custom Parameters 
 #============================================================
 
-start_time = 1 # Starting time STEP (must be larger than 0)
-end_time = 1000 # final time STEP
-jumps = 1 # number of skips between searches. (use 1, unless troubleshooting)
-R = 100 # Rough final size of crater (km) appeal to plots of the impact
+input_file = open('./Ejecta.inp','r')
+param = {'STS':None,'FTS':None,'FCS':None,'ESC':None,'CRT':None,'SIM':None}
+for line in input_file:
+    row = line.split(' ')
+    if row[0] in param.keys():
+        param[row[0]] = eval(row[-1])
+
+datafile = param['SIM']
+
+start_time = param['STS'] # Starting time STEP (must be larger than 0)
+end_time = param['FTS'] # final time STEP
+R = param['FCS'] # Rough final size of crater (km) appeal to plots of the impact
 
 # exclusion parameters (not stored anywhere but here)
-esc_vel = 11.2 # escape velocity (km/s)
-crit_angle = 1.3 # minimum angle to be considered uplift (rad)
+esc_vel = param['FCS'] # escape velocity (km/s)
+crit_angle = param['CRT'] # minimum angle to be considered uplift (rad)
 
+jumps = 1 # number of skips between searches. (use 1, unless troubleshooting)
 # terminal message
 if jumps != 1:
       print('1 out of every {} tracers considered'.format(jumps)) 
 print('Running ejecta_search.py from timesteps {}-{}\n'.format(start_time, end_time))
+
+peak_file = datafile # data file that is read to get peak pressures (at single timestep)
+data_file = datafile # data file used to extract all other information
 
 #============================================================
 #                Parameters from asteroid.inp)
@@ -34,6 +53,12 @@ for line in ast_input:
     value = (line[54:-1].replace(' ','').replace(':',',')).replace('D','*10**')
     if word == 'LAYPOS':
         layers0 = eval('['+value+']')
+    if word == 'TR_SPCH' or word == "TR_SPCV":
+        tr_spacing = eval('['+value+']')
+        for each in tr_spacing:
+            if each != -1:
+                print('Tracer Spacing must be set to -1')
+                raise
     if word in keywords:
         ast_dict[word] = eval(value)
 
@@ -53,9 +78,9 @@ layers.append(-1*10**16)
 
 print('DONE\n')   
 
-# make sure data.txt exists
-open('data.txt','a').close()
-filetest = open('data.txt','r')    
+# make sure Results.dat exists
+open('Results.dat','a').close()
+filetest = open('Results.dat','r')    
 filetest.close() 
    
 #============================================================
@@ -65,8 +90,7 @@ filetest.close()
 
 #Find the peak pressures of all tracers
 print('Extracting Peak Pressure')
-peak_file = 'jdata.dat'
-model1=psp.opendatfile('../Chicxulub/{}'.format(peak_file))
+model1=psp.opendatfile(peak_file)
 model1.setScale('km')
 step1 = model1.readStep('TrP', model1.nsteps-1)
 pres = np.append(np.zeros(0), step1.TrP/10**9)
@@ -75,8 +99,7 @@ print('DONE\n')
 
 # extract the materials and weights
 print('Extracting Materials...')
-data_file = 'jdata.dat'
-model=psp.opendatfile('../Chicxulub/{}'.format(data_file))
+model=psp.opendatfile(data_file)
 model.setScale('km')
 step = model.readStep('TrT', 0)
 xx_0 = np.append(np.zeros(0), step.xmark)
@@ -104,7 +127,7 @@ print('==============================')
 print('Starting Ejecta Search...')
 print('==============================')
 # Start the ejecta search
-model=psp.opendatfile('../Chicxulub/{}'.format(data_file))
+model=psp.opendatfile(data_file)
 model.setScale('km')
 print('Using {} with {} tracers in each timestep'.format(data_file, len(mat)))
 
@@ -211,12 +234,12 @@ print('DONE\n')
       
 print('Writing Output File...')
 try:
-    file0 = open('data.txt','x')
+    file0 = open('Results.dat','x')
 except:
-    file0 = open('data.txt','r+')
+    file0 = open('Results.dat','r+')
     file0.truncate(0)
 
-prop = [jumps, start_time, end_time, save_step, R, grid_spacing, g, a, v_0, layers]
+prop = [jumps, start_time, end_time, save_step, R, grid_spacing, g, a, v_0, layers,datafile]
 
 file0.write(str(x_list)+'\n')
 file0.write(str(y_list)+'\n')

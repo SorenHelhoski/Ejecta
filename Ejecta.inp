@@ -1,0 +1,13 @@
+
+EJECTA SEARCH CUSTOM INPUT FILE
+(leave no spaces after final column)
+--------------------------------
+STS          Starting Time Step (min 1)             1
+FTS          Final Time Step                        100
+
+FCS          Final Crater Size (km)                 500
+
+ESC          Escape Velocity (km/s)                 2.4
+CRT          Critical Angle (rad)                   1.3
+
+SIM          Loc of jdata (from this file as str)   '/scratch'+'/'+user+'/'+filename+'.dat'

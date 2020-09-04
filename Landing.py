@@ -15,7 +15,7 @@ temp_bin = 30 # number of bins in the temperature histogram
 
 print('Opening data file...')
 # open tracer file
-file2 = open('data.txt','r')
+file2 = open('Results.dat','r')
 x_list = list(eval(file2.readline().replace('\n','')))
 y_list = list(eval(file2.readline().replace('\n','')))
 w_list = list(eval(file2.readline().replace('\n','')))
@@ -27,7 +27,7 @@ m_list = list(eval(file2.readline().replace('\n','')))
 t_list = list(eval(file2.readline().replace('\n','')))
 r_list = list(eval(file2.readline().replace('\n','')))
 used =   list(eval(file2.readline().replace('\n','')))
-jumps, start_time, end_time, save_step, R, grid_spacing, g, a, v_0, layers  = eval(file2.readline().replace('\n',''))
+jumps, start_time, end_time, save_step, R, grid_spacing, g, a, v_0, layers, datafile  = eval(file2.readline().replace('\n',''))
 print('DONE\n')
 
 R_list = []
@@ -127,7 +127,6 @@ print(vol_all)
 
 height_all, h_err_all = [],[]
 width = (max(R_list)-min(R_list))/(landing_bin_all)
-print(width*R)
 for i in range(len(vol_all)):
     height_all.append(vol_all[i]/(2*np.pi*r_bin_all[i]*R*width*R))
     h_err_all.append(v_err_all[i]/(2*np.pi*r_bin_all[i]*R*width*R))
