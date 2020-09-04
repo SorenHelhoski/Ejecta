@@ -10,4 +10,4 @@ FCS          Final Crater Size (km)                 100
 ESC          Escape Velocity (km/s)                 11.2
 CRT          Critical Angle (rad)                   1.3
 
-SIM          Loc of jdata (from this file as str)   '/scratch'+'/'+user+'/'+filename+'.dat'
+SIM          Loc of jdata (from this file as str)   '../[impactdir]/jdata.dat'
