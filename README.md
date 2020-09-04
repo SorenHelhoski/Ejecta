@@ -1,11 +1,11 @@
 # Ejecta
 For use in analyzing the properties of ejecta from an iSALE impact:
 
-As of now, the code is formatted to handle a spherical impactor made of one material, and up to three layers of a flat impact surface using the 2D cylindrically symmetric iSALE shock code. Tracers must be enabled.
+As of now, the code is formatted to handle a spherical impactor made of one material, and up to three layers of a flat impact surface using the 2D cylindrically symmetric iSALE shock code. Tracers must be enabled, and set to -1 spacing in all directions.
 
-Create a directory on the same level as (impacteventname), Plotting, BenchmarkData, and eos directories 
+Create a directory on the same level as (ImpactDataDir), Plotting, BenchmarkData, and eos directories 
 
-Change the parameters in ejecta_search.py to the desired values
+Change the parameters in Ejecta.inp to the desired values
 
 run ejecta_search.py which searches through the timesteps of 'jdata.dat' from the desired simulation
 
