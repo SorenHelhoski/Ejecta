@@ -2,7 +2,7 @@
 
 #SBATCH -p standard
 
-#SBATCH -J (${PWD##*/})
+#SBATCH -J Ejecta
 
 #SBATCH -o output_%j
 
