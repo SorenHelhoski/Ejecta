@@ -2,13 +2,6 @@ import numpy as np
 from math import atan, pi, sqrt, sin, cos, floor
 import pySALEPlot as psp
 
-#get the users name and the name of the '..' directory
-import os
-strPath = os.path.realpath(__file__)
-nmFolders = strPath.split( os.path.sep )
-user = nmFolders[-5]
-filename = nmFolders[-3] # I name the jdata file after the '../../' directory
-
 #============================================================
 #                      Custom Parameters 
 #============================================================
